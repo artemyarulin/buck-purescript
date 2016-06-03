@@ -1,5 +1,5 @@
 # buck-purescript
-Set of macroses for Buck that brings support of PureScript to this build system
+Set of macroses for [Buck](https://buckbuild.com) that brings support of [PureScript](http://www.purescript.org) to this build system
 
 ## API
 
@@ -46,14 +46,22 @@ ps_test('ReceiptTests',modules=':Receipt',deps='my-own-integration-test-helper 0
 
 Have a look on [tests](tests/BUCK) for more examples
 
+## Status
+
+Active development - basic tests passes, although requires polishing
+
+## Why PureScript with Buck
+
+TODO: Try to sell both of them
+
 ## How does it work
 
-TODO: Add me
+TODO: Add horror story about RegEx and bash madness
 
 ## Requirements
 
-TODO: Add me
+TODO: Add that it's probably doesn't work on Windows, but who cares...
 
 ## Installation
 
-TODO: Add me
+TODO: How to copy a file, instruction with images
