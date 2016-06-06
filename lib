@@ -12,8 +12,8 @@ npm_template = """{"dependencies": {"purescript": "$psVersion", "pulp":"$pulpVer
 def ensure_list(i):
     return i if isinstance(i,list) else [i]
 
-def ps_define_module(name,src=None,modules=[],deps=[],test=None,psVersion="0.8.5",pulpVersion="8.2.1"):
-    src,modules,deps = map(ensure_list,[src,modules,deps])
+def ps_define_module(name,src=None,modules=[],deps=[],tests=[],psVersion="0.8.5",pulpVersion="8.2.1"):
+    src,modules,deps,tests = map(ensure_list,[src,modules,deps,tests])
     build_cmd = 'npm-cache install && `npm bin`/pulp build'
     genrule(name = name,
             srcs = src,
@@ -36,9 +36,9 @@ def ps_define_module(name,src=None,modules=[],deps=[],test=None,psVersion="0.8.5
             bash = 'cp -r $(location :{0}) . && cd build && {1} && cp -r output $OUT'.format(name,build_cmd),
             out = 'build')
 
-    if test:
+    if tests:
         genrule(name = name + '_build_test',
-                srcs = [test],
+                srcs = tests,
                 bash = 'mkdir -p $OUT/test &&' +
                 'for f in $SRCS; do path=`grep -Eo "^module\s+[a-zA-Z\.]+" $f | sed -e "s/.*[[:space:]]// ; s/\.?[a-zA-Z]+$//; s/\./\//g"` && mkdir -p $OUT/test/$path && cp $f $OUT/test/$path; done &&' +
                 'rsync -r $(location :{0})/ $OUT/ && cd $OUT && {1}'.format(name,build_cmd),
@@ -52,12 +52,12 @@ def ps_define_module(name,src=None,modules=[],deps=[],test=None,psVersion="0.8.5
 test_def_deps = ["purescript-test-unit 6.0.1",
                  "purescript-strongcheck 0.14.7"]
 
-def ps_module(name,src=[],modules=[],deps=[],test=None):
+def ps_module(name,src=[],modules=[],deps=[],tests=[]):
     ps_define_module(name,
                      src if src else name + '.purs',
                      modules,
-                     deps + test_def_deps if test else deps,
-                     test)
+                     deps + test_def_deps if tests else deps,
+                     tests)
 
 def ps_test(name,src=None,modules=[],deps=[],test_deps = test_def_deps):
     ps_define_module('test_' + name,

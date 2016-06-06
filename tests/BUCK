@@ -17,7 +17,7 @@ ps_module('E', deps='purescript-strings 0.7.1')
 ps_module('F', src = ['F1.purs','F2.purs'])
 
 # Tests
-ps_module('G', test = 'GTest.purs')
+ps_module('G', tests = 'GTest.purs')
 
 # Additional test
 ps_test('GTest2',modules=':G')
