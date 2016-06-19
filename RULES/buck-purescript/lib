@@ -1,5 +1,5 @@
 def target(name):
-    return '//:' + name
+    return '//RULES/buck-purescript:' + name
 
 bower_template = """
 {"name": "$name",

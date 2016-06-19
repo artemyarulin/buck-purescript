@@ -58,7 +58,7 @@ Active development - basic tests passes, although requires polishing
 - Buck builds and runs tests in parallel - with 32 cores you end up with 40 jobs that can handle **a lot**. Cool thing - Buck only runs build and tests when you actually need it: Changed one module - then only this and dependent(!) modules will be rebuild and tested
 - Universal CI script: `buck build "//..." && buck test "//..."`. Buck is smart enough to rebuild and test only those which were affected by change
 - Universal pre-commit hook: `git status -s | awk '{print $2'} | xargs -I {} buck query "owner('{}')" | xargs buck test` - Find all the files that got changed; find all modules which uses those files; run tests for those
-- Want to know what depends on what in your repo? `buck query 'deps(//tests:D)' --dot | dot -T png > d.png && open d.png` 
+- Want to know what depends on what in your repo? `buck query 'deps(//tests:D)' --dot | dot -T png > d.png && open d.png`
 
 ![d.png](d.png)
 
@@ -84,9 +84,9 @@ We are heavily using `Bash` scripting, so it has to be there. Following commands
 
 ## Installation
 
-Copy `RULES` folder to the root of your Buck repo. Then in your BUCK files reference it as include_defs('//RULES/buck-purescript/lib). Alternatively use [.buckconfig includes](https://buckbuild.com/concept/buckconfig.html#buildfile.includes)
+Copy `RULES` folder to the root of your Buck repo. Then in your BUCK files reference it as `include_defs('//RULES/buck-purescript/lib)`. Alternatively use [.buckconfig includes](https://buckbuild.com/concept/buckconfig.html#buildfile.includes)
 
-If you want to put it in a different place - make sure that you've changed `target` function definition in `lib` file.
+If you want to put it in a different place - make sure that you've changed `target` function definition in `RULES/buck-purescript/lib` file.
 
 ## References
 
