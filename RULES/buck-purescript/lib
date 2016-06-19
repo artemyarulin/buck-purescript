@@ -6,12 +6,12 @@ npm_template = """{"dependencies": {"purescript": "$psVersion"}}"""
 def ensure_list(i):
     return i if isinstance(i,list) else [i]
 
-def ps_define_module(name,src=None,modules=[],deps=[],tests=[],psVersion="0.9.1"):
+def ps_define_module(name,src=None,modules=[],deps=[],tests=[],main=None,psVersion="0.9.1"):
     src,modules,deps,tests = map(ensure_list,[src,modules,deps,tests])
     genrule(name = name,
             srcs = src,
             bash = 'mkdir -p $OUT/{src,deps,test} && ' +
-            'for f in $SRCS; do echo $f >> /tmp/out && path=`grep -Eo "^module\s+[a-zA-Z\.]+" $f | sed -Ee "s/.*[[:space:]]// ; s/\.?[a-zA-Z]+$//; s/\./\//g"` && mkdir -p $OUT/src/$path && cp $f $OUT/src/$path; done &&' +
+            'for f in $SRCS; do path=`grep -Eo "^module\s+[a-zA-Z\.]+" $f | sed -Ee "s/.*[[:space:]]// ; s/\.?[a-zA-Z]+$//; s/\./\//g"` && mkdir -p $OUT/src/$path && cp $f $OUT/src/$path; done &&' +
             ('&&'.join(map(lambda d: 'rsync -ra --prune-empty-dirs $(location ' + d + ')/src/ $OUT/src',modules)) if len(modules) else 'true') + '&&' +
             ('&&'.join(map(lambda d: 'rsync -ra --prune-empty-dirs $(location ' + d + ')/deps/ $OUT/deps',modules)) if len(modules) else 'true') + '&&' +
             ('&&'.join(map(lambda d: 'rsync -ra --prune-empty-dirs $(location ' + d + ')/ $OUT/deps',deps)) if len(deps) else 'true') + '&&' +
@@ -24,6 +24,12 @@ def ps_define_module(name,src=None,modules=[],deps=[],tests=[],psVersion="0.9.1"
             srcs = [],
             bash = 'cp -r $(location :{0}) . && cd build && psc "src/**/*.purs" "deps/**/*.purs" --no-prefix --output $OUT'.format(name),
             out = 'build')
+
+    if main:
+        genrule(name = name + '_release',
+            srcs = [],
+            bash = 'cp -r $(location :{0}) . && psc-bundle build/*/{{index,foreign}}.js --module {1} --output $OUT'.format(name+'_build',main),
+            out = name + '.js')
 
     if tests:
         genrule(name = name + '_build_test',
@@ -40,12 +46,13 @@ def ps_define_module(name,src=None,modules=[],deps=[],tests=[],psVersion="0.9.1"
 
 test_def_deps = []
 
-def ps_module(name,src=[],modules=[],deps=[],tests=[]):
+def ps_module(name,src=[],modules=[],deps=[],tests=[],main=None):
     ps_define_module(name,
                      src if src else name + '.purs',
                      modules,
                      ensure_list(deps) + test_def_deps if tests else deps,
-                     tests)
+                     tests,
+                     main)
 
 def ps_test(name,src=None,modules=[],deps=[],test_deps = test_def_deps):
     ps_define_module('test_' + name,
