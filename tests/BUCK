@@ -10,9 +10,6 @@ ps_module('C',modules=[':A',':B'])
 # Main
 ps_module('D',src='Main.purs',modules=':C')
 
-# Deps
-ps_module('E', deps='purescript-strings 0.7.1')
-
 # Src
 ps_module('F', src = ['F1.purs','F2.purs'])
 

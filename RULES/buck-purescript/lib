@@ -1,39 +1,28 @@
 def target(name):
     return '//RULES/buck-purescript:' + name
 
-bower_template = """
-{"name": "$name",
- "ignore": ["**/.*","node_modules", "bower_components", "output"],
- "dependencies": {
-    $deps
-}}"""
-npm_template = """{"dependencies": {"purescript": "$psVersion", "pulp":"$pulpVersion"}}"""
+npm_template = """{"dependencies": {"purescript": "$psVersion"}}"""
 
 def ensure_list(i):
     return i if isinstance(i,list) else [i]
 
-def ps_define_module(name,src=None,modules=[],deps=[],tests=[],psVersion="0.8.5",pulpVersion="8.2.1"):
+def ps_define_module(name,src=None,modules=[],deps=[],tests=[],psVersion="0.9.1"):
     src,modules,deps,tests = map(ensure_list,[src,modules,deps,tests])
-    build_cmd = 'npm-cache install && `npm bin`/pulp build'
     genrule(name = name,
             srcs = src,
-            bash = 'mkdir -p $OUT/{src,test} && touch $OUT/deps && ' +
+            bash = 'mkdir -p $OUT/{src,deps,test} && ' +
             'for f in $SRCS; do echo $f >> /tmp/out && path=`grep -Eo "^module\s+[a-zA-Z\.]+" $f | sed -Ee "s/.*[[:space:]]// ; s/\.?[a-zA-Z]+$//; s/\./\//g"` && mkdir -p $OUT/src/$path && cp $f $OUT/src/$path; done &&' +
-            ('&&'.join(map(lambda d: 'rsync -r --prune-empty-dirs $(location ' + d + ')/src/ $OUT/src',modules)) if len(modules) else 'true') + '&&' +
-            ('&&'.join(map(lambda d: 'cat $(location ' + d + ')/deps >> $OUT/deps',modules)) if len(modules) else 'true') + '&&' +
-            ('&&'.join(map(lambda d: 'echo ' + '\\"{0}\\": \\"{1}\\"'.format(*d.split()) + ' >> $OUT/deps',deps)) if len(deps) else 'true') + '&&' +
-            'deps=`cat $OUT/deps | sort --unique | paste -sd "," -` &&' +
-            'name="' + name + '"&&' +
+            ('&&'.join(map(lambda d: 'rsync -ra --prune-empty-dirs $(location ' + d + ')/src/ $OUT/src',modules)) if len(modules) else 'true') + '&&' +
+            ('&&'.join(map(lambda d: 'rsync -ra --prune-empty-dirs $(location ' + d + ')/deps/ $OUT/deps',modules)) if len(modules) else 'true') + '&&' +
+            ('&&'.join(map(lambda d: 'rsync -ra --prune-empty-dirs $(location ' + d + ')/ $OUT/deps',deps)) if len(deps) else 'true') + '&&' +
             'psVersion="' + psVersion + '"&&' +
-            'pulpVersion="' + pulpVersion + '"&&' +
-            'cat > $OUT/bower.json <<EOL\n' + bower_template + '\nEOL\n\n ' +
             'cat > $OUT/package.json <<EOL\n' + npm_template + '\nEOL\n\n ',
             out = 'build',
             visibility = ['PUBLIC'])
 
     genrule(name = name + '_build',
             srcs = [],
-            bash = 'cp -r $(location :{0}) . && cd build && {1} && cp -r output $OUT'.format(name,build_cmd),
+            bash = 'cp -r $(location :{0}) . && cd build && psc "src/**/*.purs" "deps/**/*.purs" --no-prefix --output $OUT'.format(name),
             out = 'build')
 
     if tests:
@@ -41,7 +30,7 @@ def ps_define_module(name,src=None,modules=[],deps=[],tests=[],psVersion="0.8.5"
                 srcs = tests,
                 bash = 'mkdir -p $OUT/test &&' +
                 'for f in $SRCS; do path=`grep -Eo "^module\s+[a-zA-Z\.]+" $f | sed -e "s/.*[[:space:]]// ; s/\.?[a-zA-Z]+$//; s/\./\//g"` && mkdir -p $OUT/test/$path && cp $f $OUT/test/$path; done &&' +
-                'rsync -r $(location :{0})/ $OUT/ && cd $OUT && {1}'.format(name,build_cmd),
+                'rsync -ra $(location :{0})/ $OUT/ && cd $OUT && psc "src/**/*.purs" "deps/**/*.purs" "test/**/*.purs" --no-prefix'.format(name),
                 out = 'build_test')
 
         sh_test(name = name + '_test',
@@ -49,19 +38,18 @@ def ps_define_module(name,src=None,modules=[],deps=[],tests=[],psVersion="0.8.5"
                 args = ['$(location :{0})'.format(name + '_build_test')],
                 deps = [':' + name + '_build_test'])
 
-test_def_deps = ["purescript-test-unit 6.0.1",
-                 "purescript-strongcheck 0.14.7"]
+test_def_deps = []
 
 def ps_module(name,src=[],modules=[],deps=[],tests=[]):
     ps_define_module(name,
                      src if src else name + '.purs',
                      modules,
-                     deps + test_def_deps if tests else deps,
+                     ensure_list(deps) + test_def_deps if tests else deps,
                      tests)
 
 def ps_test(name,src=None,modules=[],deps=[],test_deps = test_def_deps):
     ps_define_module('test_' + name,
                      [],
                      modules,
-                     deps + test_deps,
+                     ensure_list(deps) + test_deps,
                      src if src else name + '.purs')

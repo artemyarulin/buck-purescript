@@ -1,2 +1,2 @@
 [buildfile]
-  includes = //RULES/buck-purescript/lib
+  includes = //RULES/buck-purescript/lib //RULES/buck-bower/lib

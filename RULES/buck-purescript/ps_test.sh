@@ -1,2 +1,2 @@
 set -e
-cd $1 && $(npm bin)/pulp test
+cd $1/output && node -e 'require("./Test.Main").main()'
